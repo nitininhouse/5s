@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>5S SOP PORTAL // SHOP FLOOR TERMINAL</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  :root {
+    --steel-900:#0d0f12;
+    --steel-800:#15181d;
+    --steel-700:#1d2128;
+    --steel-600:#2a2f37;
+    --steel-500:#3a4049;
+    --steel-300:#7a8290;
+    --steel-100:#c9cfd6;
+    --amber:#ffb000;
+    --amber-dim:#a87600;
+    --hazard:#ffcc00;
+    --danger:#e23b1f;
+    --ok:#3ec46d;
+    --blueprint:#0a1a2e;
+    --grid:rgba(255,176,0,0.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'JetBrains Mono', monospace;
+    background:var(--steel-900);
+    color:var(--steel-100);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      radial-gradient(circle at 20% 10%, rgba(255,176,0,0.04), transparent 50%);
+    background-size: 32px 32px, 32px 32px, 100% 100%;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  /* Hazard tape */
+  .hazard{
+    height:14px;
+    background:repeating-linear-gradient(
+      45deg,
+      var(--hazard) 0 16px,
+      #111 16px 32px
+    );
+    border-top:1px solid #000;
+    border-bottom:1px solid #000;
+  }
+  header{
+    background:linear-gradient(180deg,var(--steel-800),var(--steel-700));
+    border-bottom:2px solid var(--amber);
+    padding:14px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    position:sticky;top:0;z-index:20;
+    box-shadow:0 4px 18px rgba(0,0,0,.6);
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:46px;height:46px;
+    background:var(--amber);
+    color:#000;
+    display:grid;place-items:center;
+    font-family:'Bebas Neue',sans-serif;
+    font-size:26px;
+    border:2px solid #000;
+    box-shadow:inset 0 0 0 2px var(--amber-dim), 2px 2px 0 #000;
+    transform:skewX(-6deg);
+  }
+  .brand h1{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:3px;
+    font-size:22px;
+    color:#fff;
+  }
+  .brand .sub{
+    font-size:10px;color:var(--steel-300);letter-spacing:2px;
+  }
+  nav{display:flex;gap:6px;flex-wrap:wrap}
+  nav button{
+    background:var(--steel-600);
+    color:var(--steel-100);
+    border:1px solid var(--steel-500);
+    border-bottom:3px solid #000;
+    padding:8px 14px;
+    font-family:inherit;font-size:11px;letter-spacing:1.5px;
+    cursor:pointer;
+    text-transform:uppercase;
+  }
+  nav button:hover{background:var(--steel-500)}
+  nav button.active{
+    background:var(--amber);color:#000;border-color:#000;
+    border-bottom:3px solid var(--amber-dim);
+  }
+  main{padding:22px;max-width:1100px;margin:0 auto}
+  .panel{
+    background:var(--steel-800);
+    border:1px solid var(--steel-600);
+    border-top:3px solid var(--amber);
+    margin-bottom:18px;
+    position:relative;
+  }
+  .panel::before, .panel::after{
+    content:'';position:absolute;width:8px;height:8px;
+    background:radial-gradient(circle,#666 30%,#222 60%, #000 100%);
+    border-radius:50%;top:6px;
+    box-shadow: 0 0 2px #000;
+  }
+  .panel::before{left:6px}.panel::after{right:6px}
+  .panel-head{
+    padding:10px 28px;
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px dashed var(--steel-500);
+    background:linear-gradient(180deg,var(--steel-700),var(--steel-800));
+  }
+  .panel-head h2{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:3px;color:var(--amber);font-size:18px;
+  }
+  .panel-head .stamp{
+    font-size:10px;color:var(--steel-300);letter-spacing:2px;
+  }
+  .panel-body{padding:18px 22px}
+  .grid{display:grid;gap:14px}
+  .machines{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  .machine-card{
+    background:var(--steel-700);
+    border:1px solid var(--steel-500);
+    padding:14px;
+    cursor:pointer;
+    position:relative;
+    transition:transform .08s, border-color .08s;
+  }
+  .machine-card:hover{border-color:var(--amber);transform:translateY(-2px)}
+  .machine-card .id{
+    font-size:10px;color:var(--amber);letter-spacing:2px;
+  }
+  .machine-card h3{
+    font-family:'Bebas Neue',sans-serif;letter-spacing:2px;
+    font-size:20px;margin:4px 0 8px;color:#fff;
+  }
+  .machine-card p{font-size:11px;color:var(--steel-300);line-height:1.5}
+  .machine-card .badge{
+    position:absolute;top:10px;right:10px;
+    font-size:9px;padding:2px 6px;letter-spacing:1px;
+    border:1px solid var(--steel-500);
+  }
+  .badge.ok{color:var(--ok);border-color:var(--ok)}
+  .badge.warn{color:var(--danger);border-color:var(--danger)}
+  /* SOP view */
+  .sop-head{
+    padding:18px 22px;
+    background:
+      repeating-linear-gradient(135deg, rgba(255,176,0,0.04) 0 8px, transparent 8px 16px),
+      var(--steel-700);
+    border-bottom:1px solid var(--steel-500);
+  }
+  .sop-head .machine-id{
+    font-size:11px;color:var(--amber);letter-spacing:3px;
+  }
+  .sop-head h2{
+    font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:3px;
+    color:#fff;margin:6px 0;
+  }
+  .sop-meta{
+    display:flex;gap:18px;font-size:10px;color:var(--steel-300);
+    letter-spacing:2px;flex-wrap:wrap;
+  }
+  .phase{
+    margin:18px 22px;
+    border:1px solid var(--steel-600);
+    background:var(--steel-700);
+  }
+  .phase-head{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--steel-600);
+    background:var(--steel-800);
+  }
+  .phase-icon{
+    width:34px;height:34px;display:grid;place-items:center;
+    background:var(--amber);color:#000;
+    font-family:'Bebas Neue',sans-serif;font-size:18px;
+    border:2px solid #000;
+  }
+  .phase-icon.danger{background:var(--danger);color:#fff}
+  .phase-icon.shine{background:#1ea3e2;color:#000}
+  .phase-head h4{
+    font-family:'Bebas Neue',sans-serif;letter-spacing:3px;
+    font-size:16px;color:#fff;
+  }
+  .phase-head .tag{
+    margin-left:auto;font-size:10px;color:var(--steel-300);
+  }
+  .checklist{padding:6px 14px}
+  .check{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:10px 6px;
+    border-bottom:1px dashed var(--steel-600);
+    cursor:pointer;
+  }
+  .check:last-child{border-bottom:none}
+  .check input{
+    appearance:none;
+    width:22px;height:22px;flex-shrink:0;
+    border:2px solid var(--steel-300);
+    background:var(--steel-800);
+    cursor:pointer;
+    position:relative;
+    margin-top:2px;
+  }
+  .check input:checked{
+    background:var(--ok);border-color:var(--ok);
+  }
+  .check input:checked::after{
+    content:'✓';position:absolute;inset:0;
+    display:grid;place-items:center;color:#000;font-weight:800;
+  }
+  .check .text{font-size:13px;line-height:1.5}
+  .check .text small{
+    display:block;font-size:10px;color:var(--steel-300);
+    margin-top:2px;letter-spacing:1px;
+  }
+  .check.danger input:not(:checked){border-color:var(--danger)}
+  .signoff{
+    margin:18px 22px;
+    padding:18px;
+    border:2px dashed var(--amber);
+    background:rgba(255,176,0,0.04);
+  }
+  .signoff h4{
+    font-family:'Bebas Neue',sans-serif;letter-spacing:3px;color:var(--amber);
+    margin-bottom:10px;
+  }
+  .signoff input, .signoff select{
+    width:100%;
+    background:var(--steel-800);
+    border:1px solid var(--steel-500);
+    border-bottom:2px solid var(--amber);
+    color:#fff;padding:10px;
+    font-family:inherit;font-size:13px;
+    margin-bottom:10px;
+  }
+  .signoff input:focus, .signoff select:focus{outline:1px solid var(--amber)}
+  .btn{
+    background:var(--amber);color:#000;border:2px solid #000;
+    padding:12px 22px;font-family:'Bebas Neue',sans-serif;
+    letter-spacing:3px;font-size:16px;cursor:pointer;
+    border-bottom:5px solid var(--amber-dim);
+  }
+  .btn:hover{background:#ffc432}
+  .btn:disabled{
+    background:var(--steel-600);color:var(--steel-300);
+    border-bottom-color:var(--steel-700);cursor:not-allowed;
+  }
+  .btn.ghost{
+    background:transparent;color:var(--amber);
+    border:1px solid var(--amber);border-bottom:2px solid var(--amber-dim);
+  }
+  .progress{
+    height:18px;background:var(--steel-800);
+    border:1px solid var(--steel-600);position:relative;
+    margin:10px 22px;overflow:hidden;
+  }
+  .progress .fill{
+    height:100%;background:repeating-linear-gradient(
+      45deg,var(--amber) 0 8px,var(--amber-dim) 8px 16px
+    );transition:width .25s;
+  }
+  .progress .label{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font-size:11px;letter-spacing:2px;color:#fff;
+    text-shadow:1px 1px 0 #000;
+  }
+  /* Scanner */
+  #reader{
+    border:2px solid var(--amber);
+    background:#000;max-width:420px;margin:0 auto;
+  }
+  .scanner-frame{
+    text-align:center;padding:18px;
+  }
+  .scan-tip{
+    font-size:11px;color:var(--steel-300);letter-spacing:2px;
+    margin-top:12px;
+  }
+  /* Log */
+  table{
+    width:100%;border-collapse:collapse;font-size:12px;
+  }
+  th,td{
+    padding:8px 10px;text-align:left;
+    border-bottom:1px solid var(--steel-600);
+  }
+  th{
+    background:var(--steel-700);color:var(--amber);
+    letter-spacing:2px;font-size:10px;
+  }
+  tr:hover td{background:var(--steel-700)}
+  .pill{
+    display:inline-block;padding:2px 8px;font-size:10px;
+    border:1px solid currentColor;letter-spacing:1px;
+  }
+  .pill.pre{color:var(--danger)}
+  .pill.run{color:var(--amber)}
+  .pill.shine{color:#1ea3e2}
+  /* Generator */
+  .qr-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;
+  }
+  .qr-card{
+    background:#fff;color:#000;
+    padding:14px;text-align:center;
+    border:2px solid #000;
+    box-shadow:4px 4px 0 var(--amber);
+  }
+  .qr-card canvas{margin:0 auto}
+  .qr-card .qr-label{
+    font-family:'Bebas Neue',sans-serif;letter-spacing:2px;
+    font-size:16px;margin-top:6px;
+  }
+  .qr-card .qr-id{font-size:10px;color:#444;letter-spacing:2px}
+  /* Footer */
+  footer{
+    text-align:center;padding:18px;
+    color:var(--steel-300);font-size:10px;letter-spacing:3px;
+    border-top:1px solid var(--steel-700);margin-top:30px;
+  }
+  .empty{
+    padding:30px;text-align:center;color:var(--steel-300);
+    font-size:12px;letter-spacing:2px;
+  }
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--ok);color:#000;
+    padding:14px 24px;font-family:'Bebas Neue',sans-serif;
+    letter-spacing:3px;border:2px solid #000;
+    box-shadow:4px 4px 0 #000;z-index:50;
+    animation:pop .35s ease-out;
+  }
+  .toast.err{background:var(--danger);color:#fff}
+  @keyframes pop{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .stat-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;
+    padding:14px 22px;
+  }
+  .stat{
+    background:var(--steel-700);border:1px solid var(--steel-600);
+    border-left:4px solid var(--amber);padding:10px 14px;
+  }
+  .stat .num{
+    font-family:'Bebas Neue',sans-serif;font-size:30px;color:#fff;
+  }
+  .stat .lbl{font-size:9px;color:var(--steel-300);letter-spacing:2px}
+  @media(max-width:600px){
+    nav{width:100%;justify-content:flex-start}
+    .brand h1{font-size:16px}
+    main{padding:14px}
+    .panel-body{padding:14px}
+  }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<header>
+  <div class="brand">
+    <div class="logo">5S</div>
+    <div>
+      <h1>SHOP FLOOR // SOP TERMINAL</h1>
+      <div class="sub">REV 2.4 · POINT-OF-USE STANDARDIZATION</div>
+    </div>
+  </div>
+  <nav>
+    <button data-view="home" class="active">▣ STATIONS</button>
+    <button data-view="scan">⌗ SCAN</button>
+    <button data-view="log">≡ LOG</button>
+    <button data-view="qr">▤ QR GEN</button>
+  </nav>
+</header>
+
+<main id="app"></main>
+
+<div class="hazard"></div>
+<footer>// 5S · SORT · SET · SHINE · STANDARDIZE · SUSTAIN //</footer>
+
+<script>
+/* ============== DATA ============== */
+const MACHINES = {
+  "CNC-01": {
+    name: "CNC MILL",
+    model: "Haas VF-2",
+    location: "BAY A · MECH LAB 1",
+    hazard: "ROTATING SPINDLE · COOLANT",
+    sop: {
+      pre: [
+        { t: "Confirm E-STOP button is accessible and unlocked", danger: true },
+        { t: "Inspect spindle, vise, and tool turret for debris", hint: "No chips, no rags" },
+        { t: "Verify safety glasses and closed-toe footwear", danger: true },
+        { t: "Check coolant reservoir level (above MIN line)" },
+        { t: "Confirm work-holding (vise/clamps) torqued to spec" }
+      ],
+      run: [
+        { t: "Load correct G-code program for this lab session", hint: "Verify program ID matches lab sheet" },
+        { t: "Set spindle RPM and feed rate per material chart" },
+        { t: "Touch off X, Y, Z work offsets — log values" },
+        { t: "Run dry-run / single-block before full execution" }
+      ],
+      shine: [
+        { t: "Power down spindle and engage door interlock", danger: true },
+        { t: "Vacuum chips from bed, vise, and turret pockets" },
+        { t: "Wipe slideways with clean rag — no oil pooling" },
+        { t: "Return tools to numbered slots in tool cart" },
+        { t: "Wipe down control panel and console" },
+        { t: "Place 'CLEAN' tag on machine" }
+      ]
+    }
+  },
+  "OSC-04": {
+    name: "OSCILLOSCOPE",
+    model: "Tektronix MDO3024",
+    location: "BAY C · ELEC LAB 2",
+    hazard: "ESD SENSITIVE",
+    sop: {
+      pre: [
+        { t: "Wear ESD wrist strap, clipped to ground point", danger: true },
+        { t: "Inspect probe tips and ground clips for damage" },
+        { t: "Verify probe compensation on CAL output" }
+      ],
+      run: [
+        { t: "Set vertical scale to expected signal range" },
+        { t: "Set timebase appropriate to signal frequency" },
+        { t: "Configure trigger source and level" },
+        { t: "Save reference waveform to USB if required" }
+      ],
+      shine: [
+        { t: "Coil probe leads loosely — no kinks" },
+        { t: "Return probes to labeled hooks on bench" },
+        { t: "Wipe screen with microfiber only — no solvents" },
+        { t: "Power off and cover with dust hood" }
+      ]
+    }
+  },
+  "LATHE-02": {
+    name: "MANUAL LATHE",
+    model: "Colchester Student 2500",
+    location: "BAY A · MECH LAB 1",
+    hazard: "ROTATING CHUCK · ENTANGLEMENT",
+    sop: {
+      pre: [
+        { t: "Remove rings, watches, loose sleeves; tie back hair", danger: true },
+        { t: "Confirm chuck key is REMOVED from chuck", danger: true, hint: "Never leave key in chuck" },
+        { t: "Inspect tool post — tool height at center line" },
+        { t: "Check ways are oiled and free of chips" }
+      ],
+      run: [
+        { t: "Select RPM for material × diameter (chart on wall)" },
+        { t: "Engage feed direction lever — confirm before cut" },
+        { t: "Take light test cut, measure with micrometer" },
+        { t: "Apply cutting fluid as required" }
+      ],
+      shine: [
+        { t: "Disengage feeds, return carriage to right end" },
+        { t: "Brush chips into tray — DO NOT use bare hands", danger: true },
+        { t: "Wipe chuck, tailstock, and ways with oily rag" },
+        { t: "Return micrometers and tools to shadow board" },
+        { t: "Sweep floor around station" }
+      ]
+    }
+  },
+  "PRINT-07": {
+    name: "3D PRINTER",
+    model: "Prusa MK4S",
+    location: "BAY B · FAB LAB",
+    hazard: "HOT SURFACES · 240°C",
+    sop: {
+      pre: [
+        { t: "Verify build plate is clean and seated flat" },
+        { t: "Check filament spool tension and feed path" },
+        { t: "Confirm nozzle is clear (no oozing blob)" }
+      ],
+      run: [
+        { t: "Slice with approved profile for filament type" },
+        { t: "Watch first layer adhesion before walking away" },
+        { t: "Log start time and estimated finish on whiteboard" }
+      ],
+      shine: [
+        { t: "Allow nozzle and bed to cool below 40°C", danger: true },
+        { t: "Remove print and scrape any residue from plate" },
+        { t: "Vacuum stray plastic from enclosure" },
+        { t: "Return tools to magnetic strip" }
+      ]
+    }
+  },
+  "DRILL-03": {
+    name: "DRILL PRESS",
+    model: "Jet JDP-17",
+    location: "BAY A · MECH LAB 1",
+    hazard: "ROTATING BIT · EJECTION",
+    sop: {
+      pre: [
+        { t: "Safety glasses ON · sleeves rolled · no gloves", danger: true },
+        { t: "Clamp workpiece — never hand-hold", danger: true },
+        { t: "Verify chuck key removed", danger: true },
+        { t: "Set belt position for correct RPM" }
+      ],
+      run: [
+        { t: "Start spindle BEFORE contacting work" },
+        { t: "Use peck-drill cycle for deep holes" },
+        { t: "Apply cutting fluid for steel" }
+      ],
+      shine: [
+        { t: "Brush chips from table and column" },
+        { t: "Lower table to home position" },
+        { t: "Return drill bits to labeled index" },
+        { t: "Wipe table with rust-inhibitor rag" }
+      ]
+    }
+  }
+};
+
+/* ============== STATE ============== */
+const STORE_KEY = "sop_signoffs_v1";
+const loadLog = () => JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+const saveLog = (l) => localStorage.setItem(STORE_KEY, JSON.stringify(l));
+
+let state = {
+  view: "home",
+  selectedMachine: null,
+  checks: {},
+  scanner: null,
+};
+
+/* ============== ROUTING ============== */
+function setView(v, machineId=null){
+  if(state.scanner){ try{state.scanner.stop()}catch(e){} state.scanner=null; }
+  state.view = v;
+  state.selectedMachine = machineId;
+  state.checks = {};
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view===v && !machineId);
+  });
+  render();
+}
+document.querySelectorAll("nav button").forEach(b=>{
+  b.addEventListener("click", ()=>setView(b.dataset.view));
+});
+
+/* ============== RENDER ============== */
+const app = document.getElementById("app");
+function render(){
+  if(state.selectedMachine) return renderSOP(state.selectedMachine);
+  if(state.view==="home") return renderHome();
+  if(state.view==="scan") return renderScan();
+  if(state.view==="log") return renderLog();
+  if(state.view==="qr") return renderQR();
+}
+
+function renderHome(){
+  const log = loadLog();
+  const today = new Date().toDateString();
+  const todayLog = log.filter(l => new Date(l.ts).toDateString()===today);
+  const cleanedToday = new Set(todayLog.filter(l=>l.phase==="shine").map(l=>l.machineId));
+
+  app.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>▣ STATION DIRECTORY</h2>
+        <span class="stamp">CLEARANCE · LEVEL 2 · STUDENT</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${Object.keys(MACHINES).length}</div><div class="lbl">STATIONS</div></div>
+        <div class="stat"><div class="num">${todayLog.length}</div><div class="lbl">SIGN-OFFS TODAY</div></div>
+        <div class="stat"><div class="num">${cleanedToday.size}</div><div class="lbl">SHINE COMPLETE</div></div>
+        <div class="stat"><div class="num">${log.length}</div><div class="lbl">TOTAL LOG ENTRIES</div></div>
+      </div>
+      <div class="panel-body">
+        <div class="grid machines">
+          ${Object.entries(MACHINES).map(([id,m])=>{
+            const isClean = cleanedToday.has(id);
+            return `
+              <div class="machine-card" data-id="${id}">
+                <span class="badge ${isClean?'ok':'warn'}">${isClean?'CLEAN':'NEEDS CHECK'}</span>
+                <div class="id">▸ ${id}</div>
+                <h3>${m.name}</h3>
+                <p>${m.model}<br>${m.location}</p>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+  app.querySelectorAll(".machine-card").forEach(c=>{
+    c.addEventListener("click",()=>setView("home", c.dataset.id));
+  });
+}
+
+function renderSOP(id){
+  const m = MACHINES[id];
+  if(!m){ toast("UNKNOWN MACHINE ID", true); setView("home"); return; }
+  const phases = [
+    { key:"pre", label:"PRE-USE / SAFETY CHECK", icon:"!", cls:"danger" },
+    { key:"run", label:"OPERATING SETTINGS", icon:"⚙", cls:"" },
+    { key:"shine", label:"POST-USE / SHINE", icon:"✦", cls:"shine" }
+  ];
+  const total = phases.reduce((s,p)=>s+m.sop[p.key].length,0);
+  const done = Object.values(state.checks).filter(Boolean).length;
+  const pct = Math.round((done/total)*100);
+
+  app.innerHTML = `
+    <div class="panel">
+      <div class="sop-head">
+        <div class="machine-id">▸ STATION ${id} · ${m.location}</div>
+        <h2>${m.name}</h2>
+        <div class="sop-meta">
+          <span>MODEL · ${m.model}</span>
+          <span style="color:var(--danger)">⚠ ${m.hazard}</span>
+          <span>OPERATOR · <span id="op-display">UNASSIGNED</span></span>
+        </div>
+      </div>
+      <div class="progress">
+        <div class="fill" style="width:${pct}%"></div>
+        <div class="label">${done} / ${total} STEPS · ${pct}%</div>
+      </div>
+
+      ${phases.map(p=>`
+        <div class="phase">
+          <div class="phase-head">
+            <div class="phase-icon ${p.cls}">${p.icon}</div>
+            <h4>${p.label}</h4>
+            <span class="tag">${m.sop[p.key].length} STEPS</span>
+          </div>
+          <div class="checklist">
+            ${m.sop[p.key].map((step,i)=>{
+              const k = `${p.key}-${i}`;
+              const checked = state.checks[k]?'checked':'';
+              return `
+                <label class="check ${step.danger?'danger':''}">
+                  <input type="checkbox" data-k="${k}" ${checked}>
+                  <div class="text">
+                    ${step.t}
+                    ${step.hint?`<small>↳ ${step.hint}</small>`:''}
+                    ${step.danger?`<small style="color:var(--danger)">↳ CRITICAL · CANNOT SKIP</small>`:''}
+                  </div>
+                </label>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `).join("")}
+
+      <div class="signoff">
+        <h4>▤ OPERATOR SIGN-OFF</h4>
+        <input id="op-name" placeholder="OPERATOR NAME / STUDENT ID" autocomplete="off">
+        <select id="op-phase">
+          <option value="pre">PRE-USE COMPLETE · CLEARED TO RUN</option>
+          <option value="run">SESSION COMPLETE · MACHINE STOPPED</option>
+          <option value="shine" selected>SHINE COMPLETE · STATION READY</option>
+        </select>
+        <div class="row">
+          <button class="btn" id="submit-signoff">⊕ STAMP SIGN-OFF</button>
+          <button class="btn ghost" id="back-home">◂ BACK TO STATIONS</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener("change",()=>{
+      state.checks[cb.dataset.k] = cb.checked;
+      // update progress without full rerender
+      const newDone = Object.values(state.checks).filter(Boolean).length;
+      const newPct = Math.round((newDone/total)*100);
+      app.querySelector(".progress .fill").style.width = newPct+"%";
+      app.querySelector(".progress .label").textContent =
+        `${newDone} / ${total} STEPS · ${newPct}%`;
+    });
+  });
+  app.querySelector("#op-name").addEventListener("input",e=>{
+    document.getElementById("op-display").textContent =
+      e.target.value.trim().toUpperCase() || "UNASSIGNED";
+  });
+  app.querySelector("#submit-signoff").addEventListener("click",()=>{
+    const name = app.querySelector("#op-name").value.trim();
+    const phase = app.querySelector("#op-phase").value;
+    if(!name){ toast("OPERATOR ID REQUIRED",true); return; }
+    // require all critical (danger) steps in selected phase + earlier phases be checked
+    const phaseOrder = ["pre","run","shine"];
+    const required = phaseOrder.slice(0, phaseOrder.indexOf(phase)+1);
+    let blocked = null;
+    for(const p of required){
+      m.sop[p].forEach((step,i)=>{
+        if(step.danger && !state.checks[`${p}-${i}`]) blocked = step.t;
+      });
+    }
+    if(blocked){ toast("CRITICAL STEP INCOMPLETE: "+blocked.slice(0,32).toUpperCase(),true); return; }
+    const log = loadLog();
+    log.unshift({
+      ts: Date.now(),
+      machineId: id,
+      machine: m.name,
+      operator: name,
+      phase,
+      stepsChecked: Object.values(state.checks).filter(Boolean).length,
+      stepsTotal: total
+    });
+    saveLog(log);
+    toast("SIGN-OFF STAMPED · "+phase.toUpperCase());
+    setView("home");
+  });
+  app.querySelector("#back-home").addEventListener("click",()=>setView("home"));
+}
+
+function renderScan(){
+  app.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>⌗ QR SCAN INTAKE</h2>
+        <span class="stamp">CAMERA · LIVE</span>
+      </div>
+      <div class="scanner-frame">
+        <div id="reader" style="width:100%"></div>
+        <div class="scan-tip">↳ ALIGN QR CODE WITHIN FRAME · AUTO-DETECT</div>
+        <div class="row" style="justify-content:center;margin-top:14px">
+          <button class="btn ghost" id="manual">ENTER ID MANUALLY</button>
+        </div>
+      </div>
+    </div>
+  `;
+  app.querySelector("#manual").addEventListener("click",()=>{
+    const id = prompt("ENTER STATION ID (e.g. CNC-01):");
+    if(id && MACHINES[id.trim().toUpperCase()]) setView("home", id.trim().toUpperCase());
+    else if(id) toast("UNKNOWN STATION ID", true);
+  });
+  // start scanner
+  try{
+    const html5 = new Html5Qrcode("reader");
+    state.scanner = html5;
+    html5.start(
+      { facingMode:"environment" },
+      { fps:10, qrbox:{width:240,height:240} },
+      (decoded)=>{
+        let id = decoded;
+        try{ const u = new URL(decoded); id = u.searchParams.get("station") || decoded; }catch(e){}
+        id = id.trim().toUpperCase();
+        if(MACHINES[id]){
+          html5.stop().then(()=>setView("home", id));
+        } else {
+          toast("UNRECOGNIZED CODE: "+id.slice(0,16), true);
+        }
+      },
+      ()=>{}
+    ).catch(err=>{
+      app.querySelector(".scanner-frame").innerHTML += `
+        <div class="empty" style="color:var(--danger)">
+          ▼ CAMERA UNAVAILABLE<br>
+          <small>${(err.message||err).toString().toUpperCase()}</small><br>
+          USE MANUAL ENTRY BELOW
+        </div>
+      `;
+    });
+  }catch(err){
+    toast("SCANNER INIT FAILED",true);
+  }
+}
+
+function renderLog(){
+  const log = loadLog();
+  app.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>≡ AUDIT LOG</h2>
+        <span class="stamp">${log.length} ENTRIES · LOCAL STORE</span>
+      </div>
+      <div class="panel-body">
+        ${log.length===0?`<div class="empty">▼ NO SIGN-OFFS RECORDED</div>`:`
+          <table>
+            <thead><tr>
+              <th>TIMESTAMP</th><th>STATION</th><th>OPERATOR</th>
+              <th>PHASE</th><th>STEPS</th>
+            </tr></thead>
+            <tbody>
+            ${log.slice(0,200).map(l=>`
+              <tr>
+                <td>${new Date(l.ts).toLocaleString()}</td>
+                <td><b>${l.machineId}</b><br><small style="color:var(--steel-300)">${l.machine}</small></td>
+                <td>${l.operator}</td>
+                <td><span class="pill ${l.phase}">${l.phase.toUpperCase()}</span></td>
+                <td>${l.stepsChecked}/${l.stepsTotal}</td>
+              </tr>
+            `).join("")}
+            </tbody>
+          </table>
+        `}
+        <div class="row" style="margin-top:14px">
+          <button class="btn ghost" id="export">⤓ EXPORT CSV</button>
+          <button class="btn ghost" id="clear" style="border-color:var(--danger);color:var(--danger)">⌫ CLEAR LOG</button>
+        </div>
+      </div>
+    </div>
+  `;
+  app.querySelector("#export").addEventListener("click",()=>{
+    if(log.length===0){ toast("NOTHING TO EXPORT",true); return; }
+    const rows = [["timestamp","machine_id","machine","operator","phase","steps_checked","steps_total"]];
+    log.forEach(l=>rows.push([new Date(l.ts).toISOString(),l.machineId,l.machine,l.operator,l.phase,l.stepsChecked,l.stepsTotal]));
+    const csv = rows.map(r=>r.map(c=>`"${(c+"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv],{type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `sop_log_${Date.now()}.csv`;
+    a.click();
+  });
+  app.querySelector("#clear").addEventListener("click",()=>{
+    if(confirm("CLEAR ALL SIGN-OFF RECORDS?")){
+      saveLog([]); toast("LOG CLEARED"); render();
+    }
+  });
+}
+
+function renderQR(){
+  app.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>▤ QR LABEL GENERATOR</h2>
+        <span class="stamp">PRINT · LAMINATE · MOUNT</span>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:12px;color:var(--steel-300);margin-bottom:14px;letter-spacing:1px">
+          ▸ PRINT THESE CODES AND AFFIX TO EACH STATION. STUDENTS SCAN TO LOAD SOP.
+        </p>
+        <div class="qr-grid" id="qr-grid"></div>
+        <div class="row" style="margin-top:18px">
+          <button class="btn" onclick="window.print()">⎙ PRINT LABELS</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const base = location.href.split("#")[0].split("?")[0];
+  const grid = app.querySelector("#qr-grid");
+  Object.entries(MACHINES).forEach(([id,m])=>{
+    const card = document.createElement("div");
+    card.className = "qr-card";
+    const url = `${base}?station=${id}`;
+    card.innerHTML = `
+      <canvas></canvas>
+      <div class="qr-label">${m.name}</div>
+      <div class="qr-id">${id} · ${m.location}</div>
+    `;
+    grid.appendChild(card);
+    QRCode.toCanvas(card.querySelector("canvas"), url, { width:180, margin:1 });
+  });
+}
+
+/* ============== UTIL ============== */
+function toast(msg, isErr=false){
+  document.querySelectorAll(".toast").forEach(t=>t.remove());
+  const t = document.createElement("div");
+  t.className = "toast"+(isErr?" err":"");
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2400);
+}
+
+/* ============== DEEP-LINK FROM QR ============== */
+(function init(){
+  const params = new URLSearchParams(location.search);
+  const station = params.get("station");
+  if(station && MACHINES[station.toUpperCase()]){
+    setView("home", station.toUpperCase());
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>
