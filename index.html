@@ -1074,22 +1074,18 @@ function renderQR(){
     const card = document.createElement("div");
     card.className = "qr-card";
     const url = `${base}?station=${id}`;
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&ecc=H&margin=2&data=${encodeURIComponent(url)}`;
     card.innerHTML = `
       <div style="font-family:'Bebas Neue';font-size:11px;letter-spacing:3px;color:#000;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:8px">
         ▸ SCAN FOR SOP
       </div>
-      <canvas></canvas>
+      <img src="${qrSrc}" alt="QR ${id}" width="220" height="220" style="display:block;margin:0 auto;background:#fff" onerror="this.outerHTML='<div style=\\'color:red;font-size:10px;padding:30px\\'>QR LOAD FAILED — CHECK INTERNET</div>'">
       <div class="qr-label">${m.name}</div>
       <div class="qr-id">STATION ${id}</div>
       <div style="font-size:9px;color:#666;letter-spacing:1px;margin-top:4px">${m.location}</div>
       <div style="font-size:8px;color:#999;margin-top:6px;word-break:break-all">${url}</div>
     `;
     grid.appendChild(card);
-    QRCode.toCanvas(card.querySelector("canvas"), url, { width:220, margin:2, errorCorrectionLevel:'H' }, (err)=>{
-      if(err){
-        card.querySelector("canvas").outerHTML = `<div style="color:red;font-size:10px;padding:20px">QR ERROR</div>`;
-      }
-    });
   });
 }
 
