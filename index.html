@@ -355,11 +355,69 @@
     font-family:'Bebas Neue',sans-serif;font-size:30px;color:#fff;
   }
   .stat .lbl{font-size:9px;color:var(--steel-300);letter-spacing:2px}
+  /* Add Station form */
+  .form-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  }
+  .form-grid .full{grid-column:1/-1}
+  .form-field label{
+    display:block;font-size:10px;color:var(--amber);
+    letter-spacing:2px;margin-bottom:4px;
+  }
+  .form-field input, .form-field textarea, .form-field select{
+    width:100%;background:var(--steel-800);
+    border:1px solid var(--steel-500);border-bottom:2px solid var(--amber);
+    color:#fff;padding:10px;font-family:inherit;font-size:12px;
+  }
+  .form-field textarea{min-height:80px;resize:vertical}
+  .step-row{
+    display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;
+  }
+  .step-row input[type=text]{flex:1}
+  .step-row label{
+    display:flex;align-items:center;gap:4px;font-size:10px;
+    color:var(--danger);white-space:nowrap;padding:8px;
+    border:1px solid var(--steel-500);
+  }
+  .step-row button{
+    background:var(--danger);color:#fff;border:none;
+    padding:8px 10px;cursor:pointer;
+  }
+  .add-step-btn{
+    background:var(--steel-600);color:var(--amber);
+    border:1px dashed var(--amber);padding:6px 12px;
+    font-family:inherit;font-size:10px;letter-spacing:2px;
+    cursor:pointer;margin-top:6px;
+  }
+  .phase-builder{
+    border:1px solid var(--steel-600);padding:12px;
+    margin-bottom:12px;background:var(--steel-700);
+  }
+  .phase-builder h5{
+    font-family:'Bebas Neue',sans-serif;letter-spacing:3px;
+    color:var(--amber);margin-bottom:8px;font-size:14px;
+  }
+  /* Print rules */
+  @media print{
+    body{background:#fff;color:#000}
+    header,nav,footer,.hazard,.panel-head,.btn,.row{display:none !important}
+    .panel{border:none;background:#fff}
+    .panel::before,.panel::after{display:none}
+    .qr-grid{
+      grid-template-columns:repeat(2,1fr) !important;
+      gap:20px !important;
+    }
+    .qr-card{
+      box-shadow:none;border:2px solid #000;
+      page-break-inside:avoid;
+    }
+  }
   @media(max-width:600px){
     nav{width:100%;justify-content:flex-start}
     .brand h1{font-size:16px}
     main{padding:14px}
     .panel-body{padding:14px}
+    .form-grid{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -378,6 +436,7 @@
     <button data-view="scan">⌗ SCAN</button>
     <button data-view="log">≡ LOG</button>
     <button data-view="qr">▤ QR GEN</button>
+    <button data-view="add">＋ ADD STATION</button>
   </nav>
 </header>
 
@@ -388,7 +447,11 @@
 
 <script>
 /* ============== DATA ============== */
-const MACHINES = {
+const CUSTOM_KEY = "sop_custom_machines_v1";
+const loadCustom = () => JSON.parse(localStorage.getItem(CUSTOM_KEY) || "{}");
+const saveCustom = (m) => localStorage.setItem(CUSTOM_KEY, JSON.stringify(m));
+const getMachines = () => ({ ...DEFAULT_MACHINES, ...loadCustom() });
+const DEFAULT_MACHINES = {
   "CNC-01": {
     name: "CNC MILL",
     model: "Haas VF-2",
@@ -556,6 +619,167 @@ function render(){
   if(state.view==="scan") return renderScan();
   if(state.view==="log") return renderLog();
   if(state.view==="qr") return renderQR();
+  if(state.view==="add") return renderAdd();
+}
+
+/* ============== ADD STATION ============== */
+let formState = { steps: { pre:[{t:"",d:false}], run:[{t:"",d:false}], shine:[{t:"",d:false}] } };
+
+function renderAdd(){
+  const phases = [
+    { key:"pre", label:"PRE-USE / SAFETY STEPS" },
+    { key:"run", label:"OPERATING SETTING STEPS" },
+    { key:"shine", label:"POST-USE / SHINE STEPS" }
+  ];
+  const custom = loadCustom();
+  app.innerHTML = `
+    <div class="panel">
+      <div class="panel-head">
+        <h2>＋ ADD NEW STATION</h2>
+        <span class="stamp">SUPERVISOR · BUILD SOP</span>
+      </div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>STATION ID *</label>
+            <input id="f-id" placeholder="e.g. WELD-05" maxlength="20">
+          </div>
+          <div class="form-field">
+            <label>MACHINE NAME *</label>
+            <input id="f-name" placeholder="e.g. MIG WELDER">
+          </div>
+          <div class="form-field">
+            <label>MODEL</label>
+            <input id="f-model" placeholder="e.g. Lincoln 210MP">
+          </div>
+          <div class="form-field">
+            <label>LOCATION</label>
+            <input id="f-loc" placeholder="e.g. BAY D · WELDING SHOP">
+          </div>
+          <div class="form-field full">
+            <label>HAZARD WARNING</label>
+            <input id="f-haz" placeholder="e.g. ARC FLASH · HOT METAL · FUMES">
+          </div>
+        </div>
+
+        <div style="margin-top:18px">
+          ${phases.map(p=>`
+            <div class="phase-builder" data-phase="${p.key}">
+              <h5>▸ ${p.label}</h5>
+              <div class="step-list" data-phase="${p.key}">
+                ${formState.steps[p.key].map((s,i)=>stepRow(p.key,i,s)).join("")}
+              </div>
+              <button class="add-step-btn" data-add="${p.key}">＋ ADD STEP</button>
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="row" style="margin-top:18px">
+          <button class="btn" id="save-station">⊕ SAVE STATION</button>
+          <button class="btn ghost" id="reset-form">⌫ RESET</button>
+        </div>
+
+        ${Object.keys(custom).length?`
+          <div style="margin-top:24px">
+            <h5 style="font-family:'Bebas Neue';letter-spacing:3px;color:var(--amber);margin-bottom:8px">YOUR CUSTOM STATIONS (${Object.keys(custom).length})</h5>
+            <table>
+              <thead><tr><th>ID</th><th>NAME</th><th>LOCATION</th><th></th></tr></thead>
+              <tbody>
+              ${Object.entries(custom).map(([id,m])=>`
+                <tr>
+                  <td><b>${id}</b></td><td>${m.name}</td><td>${m.location||'-'}</td>
+                  <td><button class="add-step-btn" data-del="${id}" style="border-color:var(--danger);color:var(--danger)">DELETE</button></td>
+                </tr>
+              `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `:''}
+      </div>
+    </div>
+  `;
+  bindAddForm();
+}
+
+function stepRow(phase, i, s){
+  return `
+    <div class="step-row" data-phase="${phase}" data-i="${i}">
+      <input type="text" placeholder="Describe step #${i+1}" value="${(s.t||'').replace(/"/g,'&quot;')}" data-field="t">
+      <label><input type="checkbox" data-field="d" ${s.d?'checked':''}> CRITICAL</label>
+      <button data-rm="1">✕</button>
+    </div>
+  `;
+}
+
+function bindAddForm(){
+  app.querySelectorAll(".step-row input").forEach(inp=>{
+    inp.addEventListener("input",e=>{
+      const row = e.target.closest(".step-row");
+      const phase = row.dataset.phase, i = +row.dataset.i;
+      const field = e.target.dataset.field;
+      formState.steps[phase][i][field] = field==="d" ? e.target.checked : e.target.value;
+    });
+  });
+  app.querySelectorAll(".step-row button[data-rm]").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const row = e.target.closest(".step-row");
+      const phase = row.dataset.phase, i = +row.dataset.i;
+      if(formState.steps[phase].length<=1) return;
+      formState.steps[phase].splice(i,1);
+      renderAdd();
+    });
+  });
+  app.querySelectorAll("[data-add]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      formState.steps[btn.dataset.add].push({t:"",d:false});
+      renderAdd();
+    });
+  });
+  app.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(!confirm(`Delete station ${btn.dataset.del}?`)) return;
+      const c = loadCustom();
+      delete c[btn.dataset.del];
+      saveCustom(c);
+      toast("STATION DELETED");
+      renderAdd();
+    });
+  });
+  app.querySelector("#reset-form").addEventListener("click",()=>{
+    formState = { steps: { pre:[{t:"",d:false}], run:[{t:"",d:false}], shine:[{t:"",d:false}] } };
+    ["f-id","f-name","f-model","f-loc","f-haz"].forEach(id=>app.querySelector("#"+id).value="");
+    renderAdd();
+  });
+  app.querySelector("#save-station").addEventListener("click",()=>{
+    const id = app.querySelector("#f-id").value.trim().toUpperCase();
+    const name = app.querySelector("#f-name").value.trim();
+    if(!id || !name){ toast("ID AND NAME REQUIRED",true); return; }
+    if(!/^[A-Z0-9-]+$/.test(id)){ toast("ID: LETTERS, NUMBERS, DASH ONLY",true); return; }
+    if(getMachines()[id]){ toast("ID ALREADY EXISTS",true); return; }
+    const sop = {};
+    for(const p of ["pre","run","shine"]){
+      sop[p] = formState.steps[p].filter(s=>s.t.trim()).map(s=>({
+        t: s.t.trim(),
+        ...(s.d?{danger:true}:{})
+      }));
+    }
+    if(sop.pre.length+sop.run.length+sop.shine.length===0){
+      toast("ADD AT LEAST ONE STEP",true); return;
+    }
+    const machine = {
+      name: name.toUpperCase(),
+      model: app.querySelector("#f-model").value.trim() || "—",
+      location: app.querySelector("#f-loc").value.trim().toUpperCase() || "—",
+      hazard: app.querySelector("#f-haz").value.trim().toUpperCase() || "GENERAL CAUTION",
+      sop
+    };
+    const c = loadCustom();
+    c[id] = machine;
+    saveCustom(c);
+    formState = { steps: { pre:[{t:"",d:false}], run:[{t:"",d:false}], shine:[{t:"",d:false}] } };
+    toast(`STATION ${id} SAVED`);
+    renderAdd();
+  });
 }
 
 function renderHome(){
@@ -571,14 +795,14 @@ function renderHome(){
         <span class="stamp">CLEARANCE · LEVEL 2 · STUDENT</span>
       </div>
       <div class="stat-grid">
-        <div class="stat"><div class="num">${Object.keys(MACHINES).length}</div><div class="lbl">STATIONS</div></div>
+        <div class="stat"><div class="num">${Object.keys(getMachines()).length}</div><div class="lbl">STATIONS</div></div>
         <div class="stat"><div class="num">${todayLog.length}</div><div class="lbl">SIGN-OFFS TODAY</div></div>
         <div class="stat"><div class="num">${cleanedToday.size}</div><div class="lbl">SHINE COMPLETE</div></div>
         <div class="stat"><div class="num">${log.length}</div><div class="lbl">TOTAL LOG ENTRIES</div></div>
       </div>
       <div class="panel-body">
         <div class="grid machines">
-          ${Object.entries(MACHINES).map(([id,m])=>{
+          ${Object.entries(getMachines()).map(([id,m])=>{
             const isClean = cleanedToday.has(id);
             return `
               <div class="machine-card" data-id="${id}">
@@ -599,7 +823,7 @@ function renderHome(){
 }
 
 function renderSOP(id){
-  const m = MACHINES[id];
+  const m = getMachines()[id];
   if(!m){ toast("UNKNOWN MACHINE ID", true); setView("home"); return; }
   const phases = [
     { key:"pre", label:"PRE-USE / SAFETY CHECK", icon:"!", cls:"danger" },
@@ -732,7 +956,7 @@ function renderScan(){
   `;
   app.querySelector("#manual").addEventListener("click",()=>{
     const id = prompt("ENTER STATION ID (e.g. CNC-01):");
-    if(id && MACHINES[id.trim().toUpperCase()]) setView("home", id.trim().toUpperCase());
+    if(id && getMachines()[id.trim().toUpperCase()]) setView("home", id.trim().toUpperCase());
     else if(id) toast("UNKNOWN STATION ID", true);
   });
   // start scanner
@@ -746,7 +970,7 @@ function renderScan(){
         let id = decoded;
         try{ const u = new URL(decoded); id = u.searchParams.get("station") || decoded; }catch(e){}
         id = id.trim().toUpperCase();
-        if(MACHINES[id]){
+        if(getMachines()[id]){
           html5.stop().then(()=>setView("home", id));
         } else {
           toast("UNRECOGNIZED CODE: "+id.slice(0,16), true);
@@ -821,36 +1045,51 @@ function renderLog(){
 }
 
 function renderQR(){
+  const machines = getMachines();
+  const base = location.href.split("#")[0].split("?")[0];
   app.innerHTML = `
     <div class="panel">
       <div class="panel-head">
         <h2>▤ QR LABEL GENERATOR</h2>
-        <span class="stamp">PRINT · LAMINATE · MOUNT</span>
+        <span class="stamp">${Object.keys(machines).length} STATIONS · READY TO PRINT</span>
       </div>
       <div class="panel-body">
-        <p style="font-size:12px;color:var(--steel-300);margin-bottom:14px;letter-spacing:1px">
-          ▸ PRINT THESE CODES AND AFFIX TO EACH STATION. STUDENTS SCAN TO LOAD SOP.
-        </p>
-        <div class="qr-grid" id="qr-grid"></div>
-        <div class="row" style="margin-top:18px">
-          <button class="btn" onclick="window.print()">⎙ PRINT LABELS</button>
+        <div style="background:var(--steel-700);border-left:4px solid var(--amber);padding:12px;margin-bottom:16px;font-size:11px;line-height:1.7;letter-spacing:1px">
+          <b style="color:var(--amber)">▸ HOW TO USE</b><br>
+          1. CLICK <b>PRINT LABELS</b> (or download as PDF)<br>
+          2. CUT OUT EACH QR CARD · LAMINATE FOR DURABILITY<br>
+          3. MOUNT ON THE CORRESPONDING MACHINE AT EYE-LEVEL<br>
+          4. STUDENT SCANS QR → APP OPENS THAT MACHINE'S SOP DIRECTLY
         </div>
+        <div class="row" style="margin-bottom:14px">
+          <button class="btn" onclick="window.print()">⎙ PRINT ALL LABELS</button>
+          <span style="font-size:10px;color:var(--steel-300);letter-spacing:2px">↳ TIP: USE BROWSER "SAVE AS PDF" IF NO PRINTER</span>
+        </div>
+        <div class="qr-grid" id="qr-grid"></div>
       </div>
     </div>
   `;
-  const base = location.href.split("#")[0].split("?")[0];
   const grid = app.querySelector("#qr-grid");
-  Object.entries(MACHINES).forEach(([id,m])=>{
+  Object.entries(machines).forEach(([id,m])=>{
     const card = document.createElement("div");
     card.className = "qr-card";
     const url = `${base}?station=${id}`;
     card.innerHTML = `
+      <div style="font-family:'Bebas Neue';font-size:11px;letter-spacing:3px;color:#000;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:8px">
+        ▸ SCAN FOR SOP
+      </div>
       <canvas></canvas>
       <div class="qr-label">${m.name}</div>
-      <div class="qr-id">${id} · ${m.location}</div>
+      <div class="qr-id">STATION ${id}</div>
+      <div style="font-size:9px;color:#666;letter-spacing:1px;margin-top:4px">${m.location}</div>
+      <div style="font-size:8px;color:#999;margin-top:6px;word-break:break-all">${url}</div>
     `;
     grid.appendChild(card);
-    QRCode.toCanvas(card.querySelector("canvas"), url, { width:180, margin:1 });
+    QRCode.toCanvas(card.querySelector("canvas"), url, { width:220, margin:2, errorCorrectionLevel:'H' }, (err)=>{
+      if(err){
+        card.querySelector("canvas").outerHTML = `<div style="color:red;font-size:10px;padding:20px">QR ERROR</div>`;
+      }
+    });
   });
 }
 
@@ -868,7 +1107,7 @@ function toast(msg, isErr=false){
 (function init(){
   const params = new URLSearchParams(location.search);
   const station = params.get("station");
-  if(station && MACHINES[station.toUpperCase()]){
+  if(station && getMachines()[station.toUpperCase()]){
     setView("home", station.toUpperCase());
   } else {
     render();
